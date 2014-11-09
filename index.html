@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<link href='http://fonts.googleapis.com/css?family=Lora' rel='stylesheet' type='text/css'>
+	<link href='css/style.css' rel='stylesheet' type='text/css'>
+	<script type="text/javascript" src="lib/jquery.js"></script>
+	<script type="text/javascript" src="modevlib/imports/import.js"></script>
+</head>
+<body>
+<div class="content">
+	<div class="bugzilla_title"><span class="blue">B</span><span class="red">u</span><span class="blue">g</span><span class="yellow">z</span><span class="red">i</span><span class="green">ll</span><span class="red">a</span></div>
+	<div class="search"><form><input id="search" class="widget" style="width: 30em;" type="text"></form></div>
+	<div id="results"></div>
+</div>
+<div class="footer">
+	Source at <a href="https://github.com/mozilla/charts/blob/master/fxos/blockers.html">https://github.com/mozilla/charts/blob/master/fxos/blockers.html</a>
+</div>
+</body>
+<script type="text/javascript">
+
+	importScript("modevlib/aLibrary.js", function(){
+		var search=$("#search").change(function(){
+			var terms = $(this).val();
+			var results = search(terms);
+			$("#results").html(results.map(layout).join(""));
+		});
+	});
+
+	function search(values){
+		var commentThread=Thread.run(function*(){
+			var comments = yield(ElasticSearch.search("public_comments", {
+				"query":{"match":{"comment":values}},
+				"fields":["bug_id", "comment"],
+				"limit":10
+			}));
+
+			var bug_ids=comments.hits.hits.select("bug_id");
+
+			var bugs = yield(ElasticSearch.search("public_bugs", {
+				"query": {"filtered": {
+					"query": {"match_all": {}},
+					"filter": {"and":[
+						{"range":{"modified_ts":{"gte":Date.eod().getMilli()}}},
+						{"terms": {"bug_id": bug_ids}}
+					]}
+				}}
+			}));
+
+			//MERGE THE TWO
+
+
+		});
+
+		var bugs=undefined;
+		var bugThread=Thread.run(function*(){
+			bugs = yield(ElasticSearch.search("public_bugs", {
+			//GET THE BUG METADATA
+				"filtered": {
+					"query":{
+						"should":[
+							{"match":{"short_desc":{
+								"query":values,
+								"boost":2
+							}}},
+							{"multi_match":{
+								"fields":["created_by", "assigned_to"],
+								"query":values,
+								"boost":2
+							}},
+							{"match":{"story":{
+								"query":values
+							}}}
+						]
+					},
+					"filter": {"and":[
+						{"range":{"modified_ts":{"gte":Date.eod().getMilli()}}}
+					]}
+				},
+				"fields":["bug_id", "short_desc", "story"],
+				"limit":10
+			}));
+
+			bugs=bugs.hits.hits.select("")
+		});
+
+		yield(Thread.join(commentThread));
+		yield(Thread.join(bugThread));
+
+
+
+
+
+
+	}
+
+	var resultTemplate=new Template('<div class="result">' +
+		'<div class="title">{{bugLink}} - {{description}}</div>'+
+		'<div class="meta">{{flags}}</div>'+
+		'<div class="comment">{{date}} - {{comment}}</div>'+
+		'</div>');
+
+
+	function layout(detail){
+
+
+
+
+
+	}
+
+
+</script>
+</html>

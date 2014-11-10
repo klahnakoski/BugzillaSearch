@@ -17,8 +17,9 @@ var string2html;
 
 		var newValue=value;
 		words.forall(function(w){
-			if (newValue.indexOf(w)>=0){
-				newValue=newValue.replaceAll(w, "<b>"+w+"</b>");
+			var i = newValue.toLowerCase().indexOf(w);
+			if (i>=0){
+				newValue = newValue.substring(0, i) + "<b>" + newValue.substring(i, i + w.length) + "</b>" + newValue.substring(i + w.length);
 			}//endif
 		});
 		if (newValue!=value){

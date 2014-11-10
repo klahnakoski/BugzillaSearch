@@ -10,7 +10,7 @@ html {
     margin: 0;
     padding: 0;
     height: 100%;
-    background: url(../images/bg-gradient-sand.png) repeat-x 0 0, url(../images/bg-sand.png) repeat 0 0, #f6f5f1
+    background: white;
 }
 
 b {
@@ -189,20 +189,30 @@ body {
 
 .result .title {
     font-size: 1.4em;
+    width: 680px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .result .meta {
     color: #006621;
     font-weight: bold;
-    font-size: 1.2em;
+    font-size: 1.1em;
     line-height: 1.1em;
     padding: 0 0 0 3px;
+    width: 680px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .result .comment {
     color: #545454;
     padding: 2px 0 20px 3px;
     line-height: 1.0em;
+    width: 680px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 table tr th, table tr td {

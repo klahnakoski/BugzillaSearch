@@ -184,6 +184,7 @@ var mapAllKey=function(map, func){
 	}//for
 	return output;
 };
+Map.map=mapAllKey;
 
 
 //RETURN LIST OF {"key":key, "value":val} PAIRS

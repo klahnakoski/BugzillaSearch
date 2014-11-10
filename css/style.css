@@ -9,6 +9,7 @@ html {
     position: relative;
     margin: 0;
     padding: 0;
+    height: 100%;
     background: url(../images/bg-gradient-sand.png) repeat-x 0 0, url(../images/bg-sand.png) repeat 0 0, #f6f5f1
 }
 
@@ -22,12 +23,12 @@ hr {
 
 
 a {
-    color: #0096dd;
+    color: #166ced;
     text-decoration: none
 }
 
 a:hover, a:active {
-    color: #0073aa;
+    color: #5091F2;
     text-decoration: underline
 }
 
@@ -37,16 +38,6 @@ a:hover, a:active {
     margin-bottom: 20px;
 }
 
-
-.widget {
-    font-size: 20px;
-    color: #292929;
-    display:inline;
-    text-align: center;
-    height: 1.5em;
-    overflow: hidden;
-    border: 1px solid #166ced;
-}
 
 
 .indent {
@@ -68,46 +59,101 @@ body {
 }
 
 .content {
-    margin-top: 180px;
-    text-align: center;
     width: 100%;
 }
 
 .footer {
+    position: absolute;
     float: none;
     text-align: center;
     vertical-align: bottom;
     bottom: 0;
     width: 100%;
     height: 15px;
-    padding-top: 15px;
+    padding: 15px 0 5px 0;
     display: block;
 
 }
 
+.bugzilla {
+    padding: 180px 0 0 0;
+    text-align: center;
+    width: 100%;
+}
 
-.bugzilla_title {
+.bugzilla .title {
     height:120px;
     vertical-align: top;
     font-family: 'Lora', serif;
     font-size: 90px;
 }
 
-.bugzilla_title .blue {
+.bugzilla .widget {
+    font-size: 1.2em;
+    color: #292929;
+    display:inline;
+    text-align: left;
+    height: 1.5em;
+    overflow: hidden;
+    padding: 0 0 0 5px;
+    border: 1px solid #166ced;
+}
+
+
+
+.blue {
     color: #166ced;
 }
 
-.bugzilla_title .red {
+.red {
     color: #d8442e;
 }
 
-.bugzilla_title .yellow {
+.yellow {
     color: #ffb700;
 }
 
-.bugzilla_title .green {
+.green {
     color: #009755;
 }
+
+.bugzilla_found {
+    padding: 10px 0 5px 10px;
+    background-color: #EEEEEE;
+    height: 3em;
+    display: block;
+    width: 100%;
+}
+
+.bugzilla_found .title{
+    display: inline;
+    float: left;
+    /*height: 2.5em;*/
+    padding: 0 10px 0 0;
+    vertical-align: middle;
+    font-family: 'Lora', serif;
+    font-size: 2.0em;
+}
+
+.bugzilla_found .search {
+    padding: 0.3em 0 0 0;
+}
+
+.bugzilla_found .widget {
+    /*float: left;*/
+    font-size: 1.1em;
+    color: #292929;
+    display: inline;
+    text-align: left;
+    vertical-align: text-bottom;
+    height: 1.5em;
+    overflow: hidden;
+    padding: 0 0 0 5px;
+    border: 1px solid #166ced;
+}
+
+
+
 
 .warning {
     font-family: 'Open Sans', sans-serif;
@@ -122,6 +168,42 @@ body {
     font-weight: bold;
 }
 
+.result {
+    padding: 0 0 0 60px;
+    text-align: left;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.result a {
+    color: #1a0dab;
+
+}
+
+.result a:visited {
+    color: #660099
+}
+
+
+.result .title {
+    font-size: 1.4em;
+}
+
+.result .meta {
+    color: #006621;
+    font-weight: bold;
+    font-size: 1.2em;
+    line-height: 1.1em;
+    padding: 0 0 0 3px;
+}
+
+.result .comment {
+    color: #545454;
+    padding: 2px 0 20px 3px;
+    line-height: 1.0em;
+}
 
 table tr th, table tr td {
     border: 0;

@@ -8,107 +8,181 @@
 	<script type="text/javascript" src="modevlib/imports/import.js"></script>
 </head>
 <body>
-<div class="content">
-	<div class="bugzilla_title"><span class="blue">B</span><span class="red">u</span><span class="blue">g</span><span class="yellow">z</span><span class="red">i</span><span class="green">ll</span><span class="red">a</span></div>
-	<div class="search"><form><input id="search" class="widget" style="width: 30em;" type="text"></form></div>
+<div class="bugzilla">
+	<div id="bugzilla_title" class="title">
+		<span class="blue">B</span><span class="red">u</span><span class="blue">g</span><span class="yellow">z</span><span class="red">i</span><span class="green">ll</span><span class="red">a</span>
+	</div>
+	<div id="bugzilla_search" class="search">
+		<form action="javascript:onChange()"><input id="search" class="widget" style="width: 30em;" type="text"></form>
+	</div>
+</div>
+<div>
+	<div id="summary"></div>
 	<div id="results"></div>
 </div>
 <div class="footer">
-	Source at <a href="https://github.com/mozilla/charts/blob/master/fxos/blockers.html">https://github.com/mozilla/charts/blob/master/fxos/blockers.html</a>
+	Source at <a href="https://github.com/klahnakoski/BugzillaSearch/blob/master/index.html">https://github.com/klahnakoski/BugzillaSearch/blob/master/index.html</a>
 </div>
 </body>
 <script type="text/javascript">
 
-	importScript("modevlib/aLibrary.js", function(){
-		var search=$("#search").change(function(){
-			var terms = $(this).val();
-			var results = search(terms);
-			$("#results").html(results.map(layout).join(""));
-		});
-	});
+var DATE_FORMAT="NNN dd, yyyy";
+var search;
+var onChange;
 
-	function search(values){
-		var commentThread=Thread.run(function*(){
-			var comments = yield(ElasticSearch.search("public_comments", {
-				"query":{"match":{"comment":values}},
-				"fields":["bug_id", "comment"],
-				"limit":10
+importScript([
+	"modevlib/aLibrary.js",
+	"modevlib/util/aTemplate.js",
+	"modevlib/rest/Rest.js",
+	"js/util.js"
+], function(){
+
+
+	search = function search(values){
+
+		var uid="_results_"+Util.UID();
+
+		var commentThread = Thread.run(function*(){
+
+			var comments = yield (Rest.post({
+				url: "http://elasticsearch-zlb.bugs.scl3.mozilla.com:9200/public_comments/_search",
+//				url: "https://esfrontline.bugzilla.mozilla.org:443/public_comments/_search",
+				dataType: "json",
+				data: {
+					"query":{
+						"function_score": {
+							"query": {"match": {"comment.lowercase": values}},
+							"gauss":{
+								"modified_ts":{
+									"origin":Date.now().getMilli(),
+									"scale":Duration.newInstance("12week").milli
+								}
+							}
+						}
+					},
+					"fields": ["bug_id", "comment", "modified_ts"]
+				}
 			}));
 
-			var bug_ids=comments.hits.hits.select("bug_id");
-
-			var bugs = yield(ElasticSearch.search("public_bugs", {
-				"query": {"filtered": {
-					"query": {"match_all": {}},
-					"filter": {"and":[
-						{"range":{"modified_ts":{"gte":Date.eod().getMilli()}}},
-						{"terms": {"bug_id": bug_ids}}
-					]}
-				}}
+			//BUG_ID -> COMMENT MAP
+			comments = Map.zip(comments.hits.hits.select("fields").map(function(v){
+				v.commentDate=v.modified_ts;
+				return [v.bug_id, v];
 			}));
+			var bug_ids = Object.keys(comments);
+
+			if (bug_ids.length==0){
+				$("#"+uid).html('<span class="warning">No Results</span>');
+				yield (null);
+			}//endif
+
+			var bugs = yield (Rest.post({
+				url: "https://esfrontline.bugzilla.mozilla.org:443/public_bugs/_search",
+				dataType: "json",
+				data: {
+					"query": {"filtered": {
+						"query": {"match_all": {}},
+						"filter": {"and": [
+							{"range": {"expires_on": {"gte": Date.eod().getMilli()}}},
+							{"terms": {"bug_id": bug_ids}}
+						]}
+					}}
+				}
+			}));
+
+			bugs=bugs.hits.hits.select("_source");
+			bugs.forall(function(b){
+				Map.setDefault(b, comments[b.bug_id]);
+			});
 
 			//MERGE THE TWO
+			var placeholder = $("#"+uid);
 
+			if (placeholder.length>0){
+				//REFORMAT PAGE
+				$(".footer").css({"display":"none"});
+				$(".bugzilla").attr("class", "bugzilla_found");
 
+				var content=bugs.map(function(v){return layout(v, values.split(" "));}).join("");
+				placeholder.html(content);
+			}//endif
 		});
 
-		var bugs=undefined;
-		var bugThread=Thread.run(function*(){
-			bugs = yield(ElasticSearch.search("public_bugs", {
-			//GET THE BUG METADATA
-				"filtered": {
-					"query":{
-						"should":[
-							{"match":{"short_desc":{
-								"query":values,
-								"boost":2
-							}}},
-							{"multi_match":{
-								"fields":["created_by", "assigned_to"],
-								"query":values,
-								"boost":2
-							}},
-							{"match":{"story":{
-								"query":values
-							}}}
-						]
-					},
-					"filter": {"and":[
-						{"range":{"modified_ts":{"gte":Date.eod().getMilli()}}}
-					]}
-				},
-				"fields":["bug_id", "short_desc", "story"],
-				"limit":10
-			}));
+		//PLACEHOLDER FOR RESULTS
+		$("#results").html('<div id="'+uid+'"></div>');
 
-			bugs=bugs.hits.hits.select("")
-		});
+//		var bugs = undefined;
+//		var bugThread = Thread.run(function*(){
+//			bugs = yield(ElasticSearch.search("public_bugs", {
+//				//GET THE BUG METADATA
+//				"filtered": {
+//					"query": {
+//						"should": [
+//							{"match": {"short_desc": {
+//								"query": values,
+//								"boost": 2
+//							}}},
+//							{"multi_match": {
+//								"fields": ["created_by", "assigned_to"],
+//								"query": values,
+//								"boost": 2
+//							}},
+//							{"match": {"story": {
+//								"query": values
+//							}}}
+//						]
+//					},
+//					"filter": {"and": [
+//						{"range": {"modified_ts": {"gte": Date.eod().getMilli()}}}
+//					]}
+//				},
+//				"fields": ["bug_id", "short_desc", "story"],
+//				"limit": 10
+//			}));
+//
+//			bugs = bugs.hits.hits.select("")
+//		});
 
-		yield(Thread.join(commentThread));
-		yield(Thread.join(bugThread));
+//		yield(Thread.join(commentThread));
+//		yield(Thread.join(bugThread));
 
 
+	};
 
-
-
-
-	}
-
-	var resultTemplate=new Template('<div class="result">' +
-		'<div class="title">{{bugLink}} - {{description}}</div>'+
-		'<div class="meta">{{flags}}</div>'+
-		'<div class="comment">{{date}} - {{comment}}</div>'+
+	var resultTemplate = new Template('<div class="result">' +
+		'<div class="title"><a href="{{bugLink}}">{{bug_id}} - {{description}}</a></div>' +
+		'<div class="meta">{{flags}}</div>' +
+		'<div class="comment">{{commentDate}} - {{comment}}</div>' +
 		'</div>');
 
 
-	function layout(detail){
+	function layout(detail, searchWords){
+		detail.bugLink='https://bugzilla.mozilla.org/buglist.cgi?quicksearch='+detail.bug_id;
+		detail.description=detail.short_desc;
+		detail.flags = Map.map(detail, function(k,v){
+			if (k.startsWith("cf_")){
+				if (v-0==v && v>800000000000){
+					v=Date.newInstance(v).format(DATE_FORMAT);
+				}
 
+				return k.rightBut(3)+"="+v;
+			}//endif
+		}).join(",");
+		detail.commentDate = Date.newInstance(detail.commentDate).format(DATE_FORMAT);
+		detail.comment=string2html(detail.comment, searchWords);
 
-
-
-
+		return resultTemplate.expand(detail);
 	}
 
+	onChange = function onChange(){
+		var terms = $("#search").val();
+		search(terms);
+	};
+
+	$("#search").change(onChange);
+	$("#search").focus();
+
+});
 
 </script>
 </html>

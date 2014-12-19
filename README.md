@@ -11,7 +11,7 @@ capabilities of ElasticSearch.
 
 ###Nov 9th, 2014###
 
-Over the past year, my professional effrot has gone into using this cluster,
+Over the past year, my professional effort has gone into using this cluster,
 and others, as a data warehouse; and ElasticSearch has proven to be very
 performant for this task.   But, I have never had the opportunity to use
 ElasticSearch for what it was designed for - Searching documents!
